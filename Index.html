@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="ml">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Bill - Pro Hybrid POS</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #0b0f19; -webkit-tap-highlight-color: transparent; }
+        .premium-gradient { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); }
+        .card-blur { background: rgba(17, 24, 39, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.05); }
+    </style>
+</head>
+<body class="text-gray-100 min-h-screen">
+
+    <nav class="card-blur sticky top-0 z-40 px-4 py-4 flex justify-between items-center">
+        <div class="flex items-center gap-3">
+            <div class="premium-gradient w-10 h-10 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+                <i class="fa-solid fa-store text-white"></i>
+            </div>
+            <div>
+                <h1 id="navShopName" class="text-sm font-black text-white uppercase">MY SHOP</h1>
+                <p id="navSub" class="text-[10px] text-emerald-400 font-bold">⚡ അൾട്ടിമേറ്റ് ഹൈബ്രിഡ് POS</p>
+            </div>
+        </div>
+        
+        <div class="flex items-center gap-2">
+            <button onclick="toggleLanguage()" id="langBtn" class="text-xs bg-blue-600/20 text-blue-400 font-bold px-2.5 py-1.5 rounded-xl border border-blue-500/30 cursor-pointer">
+                English
+            </button>
+            <button onclick="openAnalyticsModal()" class="w-9 h-9 rounded-xl bg-gray-800 text-blue-400 hover:text-white flex items-center justify-center cursor-pointer" title="Analytics Graph">
+                <i class="fa-solid fa-chart-line"></i>
+            </button>
+            <button onclick="openSettingsModal()" class="w-9 h-9 rounded-xl bg-gray-800 text-gray-400 hover:text-white flex items-center justify-center cursor-pointer">
+                <i class="fa-solid fa-gear"></i>
+            </button>
+        </div>
+    </nav>
+
+    <main class="max-w-md mx-auto px-4 py-6 space-y-5">
+        
+        <div class="premium-gradient rounded-3xl p-5 shadow-xl relative overflow-hidden">
+            <div class="flex justify-between items-start mb-4">
+                <div>
+                    <p id="lblTotalSales" class="text-xs text-blue-100 uppercase font-medium">ആകെ കച്ചവടം</p>
+                    <h2 id="cardTotalSales" class="text-3xl font-bold mt-1">₹0.00</h2>
+                </div>
+                <button onclick="downloadMonthlyPDF()" class="bg-white/20 hover:bg-white/30 text-xs px-3 py-1.5 rounded-xl text-white font-bold transition-all flex items-center gap-1 cursor-pointer">
+                    <i class="fa-solid fa-file-pdf"></i> <span id="btnPdfText">PDF റിപ്പോർട്ട്</span>
+                </button>
+            </div>
+            <div class="pt-3 border-t border-white/10 flex justify-between text-xs text-blue-100">
+                <p><span id="lblBillsCount">ബില്ലുകൾ</span>: <span id="cardTotalBills" class="font-bold">0</span></p>
+                <p>GST (5%): <span id="cardTotalGst" class="font-bold">₹0.00</span></p>
+            </div>
+        </div>
+
+        <div class="w-full overflow-hidden flex justify-center bg-gray-950/40 py-1 rounded-xl border border-gray-800/50 min-h-[95px]">
+            <iframe id="adFrame1" style="border:none; background:transparent; width:728px; height:90px; max-width:100%;" scrolling="no"></iframe>
+        </div>
+
+        <button onclick="openBillingModal()" class="w-full bg-gray-900 border border-gray-800 p-5 rounded-2xl text-left transition-all active:scale-95 flex justify-between items-center group cursor-pointer">
+            <div>
+                <h4 id="lblTerminalHeader" class="font-bold text-sm text-white">⚡ ബില്ലിംഗ് കൗണ്ടർ തുറക്കൂ</h4>
+                <p id="lblTerminalSub" class="text-xs text-gray-400 mt-0.5">ബാർകോഡ് സ്കാനിംഗും മാനുവൽ ടൈപ്പിംഗും ഒന്നിച്ച്</p>
+            </div>
+            <div class="w-10 h-10 bg-blue-600/10 text-blue-400 group-hover:bg-blue-600 group-hover:text-white rounded-xl flex items-center justify-center transition-all">
+                <i class="fa-solid fa-cash-register"></i>
+            </div>
+        </button>
+
+        <div class="w-full overflow-hidden flex justify-center bg-gray-950/40 py-1 rounded-xl border border-gray-800/40 min-h-[55px]">
+            <iframe id="adFrame2" style="border:none; background:transparent; width:320px; height:50px; max-width:100%;" scrolling="no"></iframe>
+        </div>
+
+        <div>
+            <div class="flex justify-between items-center mb-2">
+                <h3 id="lblRecentBills" class="text-xs font-bold uppercase text-gray-400 tracking-wider">എല്ലാ ദിവസത്തെയും ബില്ലുകൾ (All Invoices)</h3>
+                <span onclick="clearAllData()" class="text-[10px] text-red-400 font-bold hover:underline cursor-pointer">Reset All Data</span>
+            </div>
+            <div id="billsContainer" class="space-y-2"></div>
+        </div>
+    </main>
+
+    <div id="analyticsModal" class="fixed inset-0 bg-black/90 backdrop-blur-md hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-gray-900 w-full max-w-sm rounded-2xl border border-gray-800 p-5 space-y-4">
+            <div class="flex justify-between items-center border-b border-gray-800 pb-3">
+                <h3 id="lblGraphTitle" class="text-xs font-bold uppercase text-blue-400 tracking-wider">📈 കച്ചവട ഗ്രാഫ് (Sales Analytics)</h3>
+                <button onclick="closeAnalyticsModal()" class="text-gray-400 hover:text-white cursor-pointer"><i class="fa-solid fa-xmark text-base"></i></button>
+            </div>
+            <div class="w-full h-56 bg-gray-950/40 p-2 rounded-xl">
+                <canvas id="salesChart"></canvas>
+            </div>
+            <p class="text-[10px] text-center text-gray-500 italic">വിവിധ ദിവസങ്ങളിലെ ആകെ വരുമാനത്തിന്റെ കൃത്യമായ ഗ്രാഫ് വിവരങ്ങൾ മുകളിൽ കാണാം.</p>
+        </div>
+    </div>
+
+    <div id="billingModal" class="fixed inset-0 bg-black/95 backdrop-blur-md hidden z-50 flex items-center justify-center p-3 overflow-y-auto">
+        <div class="bg-gray-900 w-full max-w-md rounded-3xl overflow-hidden border border-gray-800 flex flex-col max-h-[95vh]">
+            
+            <div class="p-4 border-b border-gray-800 flex justify-between items-center">
+                <h3 id="lblLiveWindow" class="font-bold text-sm text-blue-400 flex items-center gap-2">
+                    <i class="fa-solid fa-circle text-emerald-500 text-[10px] animate-pulse"></i> ലൈവ് മിക്സഡ് ബില്ലിംഗ് കൗണ്ടർ
+                </h3>
+                <button onclick="closeBillingModal()" class="text-gray-400 hover:text-white cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto divide-y divide-gray-800">
+                <div class="p-3 bg-gray-950/80 flex justify-between items-center gap-3">
+                    <div class="text-left">
+                        <span id="lblCamTitle" class="text-xs font-bold text-gray-300 block">ബാർകോഡ് സ്കാനർ ക്യാമറ</span>
+                        <span id="camStatusText" class="text-[10px] text-red-400 font-semibold">🔴 Camera Turned Off</span>
+                    </div>
+                    <button id="cameraToggleBtn" onclick="toggleCameraPipeline()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs py-2 px-4 rounded-xl transition-all shadow-md cursor-pointer">
+                        <i class="fa-solid fa-camera mr-1"></i> Start Camera
+                    </button>
+                </div>
+
+                <div id="cameraSection" class="bg-black relative aspect-[16/9] hidden flex items-center justify-center">
+                    <div id="scannerView" class="w-full h-full"></div>
+                    <div class="absolute inset-x-0 top-1/2 h-0.5 bg-blue-500 shadow-md animate-bounce"></div>
+                </div>
+
+                <div class="p-4 bg-gray-950/30 space-y-2">
+                    <label id="lblTypeLabel" class="text-[10px] font-bold text-gray-400 uppercase block">ബാർകോഡ് ഇല്ലാത്തവ ഇവിടെ ടൈപ്പ് ചെയ്യുക:</label>
+                    <div class="grid grid-cols-12 gap-2">
+                        <input type="text" id="entryItemName" placeholder="Item Name" class="col-span-6 bg-gray-800 border border-gray-700 rounded-xl py-2 px-3 text-xs text-white focus:outline-none">
+                        <input type="number" id="entryItemPrice" placeholder="₹ Price" class="col-span-3 bg-gray-800 border border-gray-700 rounded-xl py-2 px-2 text-xs font-bold text-white focus:outline-none">
+                        <button onclick="addTypedItemToBill()" class="col-span-3 bg-blue-600 text-white font-bold rounded-xl text-xs flex items-center justify-center shadow-md cursor-pointer">Add</button>
+                    </div>
+                </div>
+
+                <div class="w-full overflow-hidden flex justify-center bg-gray-950/60 py-2 min-h-[255px]">
+                    <iframe id="adFrame3" style="border:none; background:transparent; width:300px; height:250px; max-width:100%;" scrolling="no"></iframe>
+                </div>
+
+                <div class="p-4 space-y-2 min-h-[15vh]">
+                    <h4 id="lblCartTitle" class="text-[11px] font-bold text-gray-400 uppercase">ബില്ലിലെ സാധനങ്ങൾ:</h4>
+                    <div id="modalItemsList" class="space-y-1.5 text-xs text-gray-500 italic">സാധനങ്ങൾ ഒന്നും ചേർത്തിട്ടില്ല...</div>
+                </div>
+            </div>
+
+            <div class="p-4 bg-gray-950 border-t border-gray-800 space-y-3">
+                <input type="tel" id="custMobile" placeholder="കസ്റ്റമർ വാട്സാപ്പ് നമ്പർ" class="w-full bg-gray-900 border border-gray-700 rounded-xl py-2 px-4 text-white text-xs focus:outline-none">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <p id="lblTotalAmt" class="text-[10px] text-gray-400 uppercase">Total Amount</p>
+                        <p id="modalLiveTotal" class="text-xl font-black text-emerald-400">₹0.00</p>
+                    </div>
+                    <button onclick="sendReceiptViaWhatsApp()" class="premium-gradient text-white font-bold py-2.5 px-5 rounded-xl text-xs flex items-center gap-2 cursor-pointer">
+                        <i class="fa-solid fa-paper-plane"></i> <span id="btnSendText">SEND BILL</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="settingsModal" class="fixed inset-0 bg-black/90 hidden z-50 flex items-center justify-center p-6">
+        <div class="bg-gray-900 w-full max-w-sm rounded-2xl border border-gray-800 p-5 space-y-4">
+            <h3 class="text-sm font-bold text-white"><i class="fa-solid fa-sliders text-blue-400 mr-1"></i> കടയുടെ വിവരങ്ങൾ</h3>
+            <div>
+                <label class="text-[11px] text-gray-400 block mb-1">കടയുടെ പേര് (Shop Name)</label>
+                <input type="text" id="cfgShopName" placeholder="eg: Vintage Traders" class="w-full bg-gray-800 border border-gray-700 rounded-xl py-2 px-3 text-xs text-white focus:outline-none">
+            </div>
+            <button onclick="saveShopConfiguration()" class="w-full premium-gradient text-xs py-2 rounded-xl font-bold text-white cursor-pointer">SAVE CHANGES</button>
+        </div>
+    </div>
+
+    <script>
+        let html5QrcodeScanner = null;
+        let isCameraActive = false;
+        let currentBillItems = [];
+        let salesChartInstance = null;
+        let currentLanguage = localStorage.getItem('appLang') || 'ml';
+        
+        let configShopName = localStorage.getItem('configShopName') || "MY SHOP";
+        
+        let storageKey = 'billsList_' + configShopName.replace(/\s+/g, '_').toLowerCase();
+        let billsList = JSON.parse(localStorage.getItem(storageKey)) || [];
+        
+        let barcodeDatabase = {
+            "8901030754846": { name: "Pears Pure Soap", price: 55.00 },
+            "8901058002417": { name: "Britannia Bourbon", price: 20.00 }
+        };
+
+        const langData = {
+            en: {
+                sub: "⚡ Ultimate Hybrid POS", totalSales: "Total Sales Revenue", pdfBtn: "PDF Report",
+                bills: "Bills", termHead: "⚡ Open Billing Counter", termSub: "Scan barcodes & type manual entries together",
+                gTitle: "📈 Sales Performance Graph Analytics", recBills: "All Days Invoices Ledger History", liveWin: "Live Mixed-Mode Terminal",
+                camTitle: "Barcode Scanner Camera Radar", camOff: "🔴 Camera Turned Off", camOn: "🟢 Camera Tracking Active",
+                btnCamStart: "Start Camera", btnCamStop: "Stop Camera", typeLbl: "Type manual items without barcodes:",
+                cartTitle: "Cart Items:", totalAmt: "Total Amount", sendText: "SEND BILL", emptyCart: "No items inside cart..."
+            },
+            ml: {
+                sub: "⚡ അൾട്ടിമേറ്റ് ഹൈബ്രിഡ് POS", totalSales: "ആകെ കച്ചവടം", pdfBtn: "PDF റിപ്പോർട്ട്",
+                bills: "ബില്ലുകൾ", termHead: "⚡ ബില്ലിംഗ് കൗണ്ടർ തുറക്കൂ", termSub: "ബാർകോഡ് സ്കാനിംഗും മാനുവൽ ടൈപ്പിംഗും ഒന്നിച്ച്",
+                gTitle: "📈 കച്ചവട ഗ്രാഫ് (Sales Analytics)", recBills: "എല്ലാ ദിവസത്തെയും ബില്ലുകൾ (All Invoices)", liveWin: "ലൈവ് മിക്സഡ് ബില്ലിംഗ് കൗണ്ടർ",
+                camTitle: "ബാർകോഡ് സ്കാനർ ക്യാമറ", camOff: "🔴 Camera Turned Off", camOn: "🟢 Camera Tracking Active",
+                btnCamStart: "Start Camera", btnCamStop: "Stop Camera", typeLbl: "ബാർകോഡ് ഇല്ലാത്തവ ഇവിടെ ടൈപ്പ് ചെയ്യുക:",
+                cartTitle: "ബില്ലിലെ സാധനങ്ങൾ:", totalAmt: "Total Amount", sendText: "SEND BILL", emptyCart: "സാധനങ്ങൾ ഒന്നും ചേർത്തിട്ടില്ല..."
+            }
+        };
+
+        window.onload = function() {
+            document.getElementById('navShopName').innerText = configShopName;
+            applyUiTranslations();
+            renderDashboard();
+            initializeDynamicAdsSystem(); // 🚀 ഇന്റലിജന്റ് ഹൈബ്രിഡ് റീഫ്രഷ് സിസ്റ്റം ഇവിടെ വർക്ക് ആകും
+        }
+
+        // --- ⚡ ZERO-LAG INTELLIGENT HYBRID ADS ENGINE (A-ADS + ADSTERRA) ---
+        let showAadsState = true; 
+
+        function initializeDynamicAdsSystem() {
+            refreshAllActiveAds();
+            // ഓരോ 30 സെക്കൻഡിലും ഒരു ലാഗും ഇല്ലാതെ പരസ്യങ്ങൾ തനിയെ മാറി മാറി റീഫ്രഷ് ആകും
+            setInterval(refreshAllActiveAds, 30000);
+        }
+
+        function refreshAllActiveAds() {
+            // SLOT 1 - Top Banner (728x90)
+            loadSmartAdToFrame('adFrame1', 
+                `<iframe data-aa='2443907' src='//acceptable.a-ads.com/2443907/?size=Adaptive' style='border:0; padding:0; width:100%; height:90px; overflow:hidden; display: block; margin: auto'></iframe>`,
+                '79c222aed68116515f6887c3b3075b9a', 728, 90
+            );
+
+            // SLOT 2 - Middle Banner (320x50)
+            loadSmartAdToFrame('adFrame2', 
+                `<iframe data-aa='2443907' src='//acceptable.a-ads.com/2443907/?size=Adaptive' style='border:0; padding:0; width:100%; height:50px; overflow:hidden; display: block; margin: auto'></iframe>`,
+                '77ebe3ca876a7dca3f6625e469b3e7e4', 320, 50
+            );
+
+            // SLOT 3 - Inside Counter Banner (300x250 Square)
+            loadSmartAdToFrame('adFrame3', 
+                `<iframe data-aa='2443907' src='//acceptable.a-ads.com/2443907/?size=Adaptive' style='border:0; padding:0; width:100%; height:250px; overflow:hidden; display: block; margin: auto'></iframe>`,
+                '5fd40353b8ab9dcfcce8c7342e0b18e0', 300, 250
+            );
+
+            // അടുത്ത തവണ കാണിക്കാൻ വേണ്ടി സ്റ്റേറ്റ് തിരിക്കുന്നു (60% A-Ads മുൻഗണനയോടെ)
+            showAadsState = !showAadsState;
+        }
+
+        function loadSmartAdToFrame(frameId, aadsIframeCode, adsterraKey, width, height) {
+            const iframe = document.getElementById(frameId);
+            if (!iframe) return;
+            try {
+                const doc = iframe.contentWindow.document;
+                doc.open();
+                
+                if (showAadsState) {
+                    // A-ADS പ്ലേ ചെയ്യുന്നു (അഡാപ്റ്റീവ് ലോഡ് - അക്കൗണ്ട് പക്കാ സേഫ്)
+                    doc.write(`
+                        <body style="margin:0; padding:0; background:transparent; display:flex; justify-content:center; align-items:center; overflow:hidden;">
+                            ${aadsIframeCode}
+                        </body>
+                    `);
+                } else {
+                    // ADSTERRA പ്ലേ ചെയ്യുന്നു (ലാഗ് ഫ്രീ സ്ക്രിപ്റ്റ് ഇൻജക്ഷൻ)
+                    doc.write(`
+                        <body style="margin:0; padding:0; background:transparent; display:flex; justify-content:center; align-items:center; overflow:hidden;">
+                            <div id="ad-box"></div>
+                            <script>
+                                window.atOptions = { 'key': '${adsterraKey}', 'format': 'iframe', 'height': ${height}, 'width': ${width}, 'params': {} };
+                                var s = doc.createElement('script'); s.src = 'https://www.highperformanceformat.com/${adsterraKey}/invoke.js';
+                                doc.body.appendChild(s);
+                            <\/script>
+                        </body>
+                    `);
+                }
+                doc.close();
+            } catch(e) {}
+        }
+
+        function toggleLanguage() {
+            currentLanguage = (currentLanguage === 'ml') ? 'en' : 'ml';
+            localStorage.setItem('appLang', currentLanguage);
+            document.getElementById('langBtn').innerText = (currentLanguage === 'ml') ? 'English' : 'മലയാളം';
+            applyUiTranslations();
+            refreshUiListElements();
+        }
+
+        function applyUiTranslations() {
+            const d = langData[currentLanguage];
+            document.getElementById('navSub').innerText = d.sub;
+            document.getElementById('lblTotalSales').innerText = d.totalSales;
+            document.getElementById('btnPdfText').innerText = d.pdfBtn;
+            document.getElementById('lblBillsCount').innerText = d.bills;
+            document.getElementById('lblTerminalHeader').innerText = d.termHead;
+            document.getElementById('lblTerminalSub').innerText = d.termSub;
+            document.getElementById('lblGraphTitle').innerText = d.gTitle;
+            document.getElementById('lblRecentBills').innerText = d.recBills;
+            document.getElementById('lblLiveWindow').innerText = d.liveWin;
+            document.getElementById('lblCamTitle').innerText = d.camTitle;
+            document.getElementById('lblTypeLabel').innerText = d.typeLbl;
+            document.getElementById('lblCartTitle').innerText = d.cartTitle;
+            document.getElementById('lblTotalAmt').innerText = d.totalAmt;
+            document.getElementById('btnSendText').innerText = d.sendText;
+        }
+
+        function openAnalyticsModal() {
+            document.getElementById('analyticsModal').classList.remove('hidden');
+            setTimeout(renderSalesChartCoreEngine, 50);
+        }
+        function closeAnalyticsModal() {
+            document.getElementById('analyticsModal').classList.add('hidden');
+        }
+
+        function openBillingModal() {
+            currentBillItems = [];
+            isCameraActive = false;
+            refreshUiListElements();
+            document.getElementById('modalLiveTotal').innerText = "₹0.00";
+            document.getElementById('custMobile').value = "";
+            document.getElementById('entryItemName').value = "";
+            document.getElementById('entryItemPrice').value = "";
+            document.getElementById('cameraSection').classList.add('hidden');
+            
+            const btn = document.getElementById('cameraToggleBtn');
+            btn.className = "bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs py-2 px-4 rounded-xl transition-all shadow-md cursor-pointer";
+            btn.innerHTML = '<i class="fa-solid fa-camera mr-1"></i> Start Camera';
+            document.getElementById('camStatusText').innerText = langData[currentLanguage].camOff;
+            document.getElementById('camStatusText').className = "text-[10px] text-red-400 font-semibold";
+
+            document.getElementById('billingModal').classList.remove('hidden');
+        }
+
+        function toggleCameraPipeline() {
+            const camSec = document.getElementById('cameraSection');
+            const btn = document.getElementById('cameraToggleBtn');
+            const status = document.getElementById('camStatusText');
+
+            if (!isCameraActive) {
+                camSec.classList.remove('hidden');
+                btn.className = "bg-red-600 hover:bg-red-500 text-white font-bold text-xs py-2 px-4 rounded-xl transition-all shadow-md cursor-pointer";
+                btn.innerHTML = '<i class="fa-solid fa-camera-roto mr-1"></i> Stop Camera';
+                status.innerText = langData[currentLanguage].camOn;
+                status.className = "text-[10px] text-emerald-400 font-semibold";
+                isCameraActive = true;
+                
+                html5QrcodeScanner = new Html5Qrcode("scannerView");
+                html5QrcodeScanner.start(
+                    { facingMode: "environment" },
+                    { fps: 15, qrbox: { width: 250, height: 120 } },
+                    (decodedText) => { handleBarcodeScanHit(decodedText); },
+                    (err) => {}
+                ).catch(e => {});
+            } else {
+                killCameraCore();
+                camSec.classList.add('hidden');
+                btn.className = "bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs py-2 px-4 rounded-xl transition-all shadow-md cursor-pointer";
+                btn.innerHTML = '<i class="fa-solid fa-camera mr-1"></i> Start Camera';
+                status.innerText = langData[currentLanguage].camOff;
+                status.className = "text-[10px] text-red-400 font-semibold";
+                isCameraActive = false;
+            }
+        }
+
+        function killCameraCore() {
+            if (html5QrcodeScanner) {
+                html5QrcodeScanner.stop().then(() => { html5QrcodeScanner = null; }).catch(e => {});
+            }
+        }
+
+        function handleBarcodeScanHit(barcode) {
+            if (barcodeDatabase[barcode]) {
+                const item = barcodeDatabase[barcode];
+                appendItemToCurrentState(item.name, item.price);
+                html5QrcodeScanner.pause();
+                setTimeout(() => { if(html5QrcodeScanner && isCameraActive) html5QrcodeScanner.resume(); }, 1500);
+            } else {
+                triggerBeepSound(400, 0.25);
+                alert(`⚠️ Product Not Found!\n\nബാർകോഡ് കോഡ്: ${barcode}`);
+            }
+        }
+
+        function addTypedItemToBill() {
+            const nameF = document.getElementById('entryItemName');
+            const priceF = document.getElementById('entryItemPrice');
+            const name = nameF.value.trim();
+            const price = parseFloat(priceF.value);
+
+            if(!name || isNaN(price) || price < 0) { alert("പേരും വിലയും ശരിയായി ടൈപ്പ് ചെയ്യുക!"); return; }
+            appendItemToCurrentState(name, price);
+            nameF.value = ''; priceF.value = '';
+        }
+
+        function appendItemToCurrentState(name, price) {
+            triggerBeepSound(1300, 0.05);
+            const existingIndex = currentBillItems.findIndex(i => i.name.toLowerCase() === name.toLowerCase());
+            
+            if(existingIndex !== -1) {
+                currentBillItems[existingIndex].qty += 1;
+                refreshUiListElements();
+                return;
+            }
+
+            const instanceId = Date.now() + Math.floor(Math.random() * 50);
+            currentBillItems.push({ instanceId: instanceId, name: name, price: price, qty: 1 });
+            refreshUiListElements();
+        }
+
+        function modifyQuantity(instanceId, delta) {
+            const idx = currentBillItems.findIndex(i => i.instanceId === instanceId);
+            if(idx !== -1) {
+                currentBillItems[idx].qty += delta;
+                if(currentBillItems[idx].qty <= 0) currentBillItems.splice(idx, 1);
+                refreshUiListElements();
+            }
+        }
+
+        function refreshUiListElements() {
+            const list = document.getElementById('modalItemsList');
+            if(currentBillItems.length === 0) {
+                list.innerHTML = langData[currentLanguage].emptyCart;
+                calculateLiveTotalAmount();
+                return;
+            }
+            
+            list.innerHTML = '';
+            currentBillItems.forEach(item => {
+                list.innerHTML += `
+                    <div class="flex justify-between items-center bg-gray-800/40 px-3 py-1.5 rounded-xl border border-gray-700/30 gap-2">
+                        <span class="text-gray-200 font-medium flex-1 truncate">${item.name}</span>
+                        <div class="flex items-center gap-2 bg-gray-900 px-2 py-0.5 rounded-lg border border-gray-800">
+                            <button onclick="modifyQuantity(${item.instanceId}, -1)" class="text-gray-400 hover:text-white font-bold p-1 cursor-pointer"><i class="fa-solid fa-minus text-[10px]"></i></button>
+                            <span class="text-white font-bold min-w-[12px] text-center">${item.qty}</span>
+                            <button onclick="modifyQuantity(${item.instanceId}, 1)" class="text-gray-400 hover:text-white font-bold p-1 cursor-pointer"><i class="fa-solid fa-plus text-[10px]"></i></button>
+                        </div>
+                        <p class="text-emerald-400 font-bold w-16 text-right">₹${(item.price * item.qty).toFixed(2)}</p>
+                    </div>
+                `;
+            });
+            calculateLiveTotalAmount();
+        }
+
+        function calculateLiveTotalAmount() {
+            let total = 0; currentBillItems.forEach(i => total += (i.price * i.qty));
+            document.getElementById('modalLiveTotal').innerText = `₹${total.toFixed(2)}`;
+        }
+
+        function sendReceiptViaWhatsApp() {
+            const mobile = document.getElementById('custMobile').value.trim();
+            if(!mobile) { alert("കസ്റ്റമർ മൊബൈൽ നമ്പർ നൽകുക!"); return; }
+            if(currentBillItems.length === 0) { alert("ബില്ലിൽ സാധനങ്ങൾ ഒന്നുമില്ല!"); return; }
+
+            let total = 0; let itemsText = "";
+            currentBillItems.forEach((i, idx) => {
+                let subTotal = i.price * i.qty; total += subTotal;
+                itemsText += `${idx + 1}. ${i.name} (${i.qty} Nos) - ₹${subTotal.toFixed(2)}\n`;
+            });
+
+            const curDate = new Date().toLocaleDateString('en-IN');
+            const curTime = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+            billsList.unshift({ id: Date.now(), mobile: mobile, total: total, itemsCount: currentBillItems.length, time: curTime, date: curDate });
+            localStorage.setItem(storageKey, JSON.stringify(billsList));
+
+            let message = `*🛍️ ${configShopName.toUpperCase()} DIGITAL INVOICE *\n📅 Date: ${curDate} | ⏰ Time: ${curTime}\n----------------------------------\n${itemsText}----------------------------------\n💰 *GRAND TOTAL: ₹${total.toFixed(2)}*`;
+
+            window.open(`https://wa.me/91${mobile}?text=${encodeURIComponent(message)}`, '_blank');
+            closeBillingModal();
+            renderDashboard();
+        }
+
+        function downloadMonthlyPDF() {
+            if (billsList.length === 0) { alert("ബില്ലുകൾ ഒന്നും ലഭ്യമല്ല!"); return; }
+            let printWindow = window.open('', '_blank');
+            let rowsHtml = ""; let grandTotal = 0;
+            billsList.forEach((b, idx) => {
+                grandTotal += b.total;
+                rowsHtml += `<tr style="border-bottom: 1px solid #ddd; font-size: 13px;"><td style="padding: 10px;">${idx + 1}</td><td style="padding: 10px;">${b.date} - ${b.time}</td><td style="padding: 10px;">${b.mobile}</td><td style="padding: 10px; text-align: center;">${b.itemsCount}</td><td style="padding: 10px; text-align: right; font-weight: bold;">₹${b.total.toFixed(2)}</td></tr>`;
+            });
+            printWindow.document.write(`<html><body><h1 style="color:#1d4ed8; text-align:center; text-transform: uppercase;">${configShopName}</h1><table border="1" style="width:100%; border-collapse:collapse;">${rowsHtml}</table><h3>Grand Total: ₹${grandTotal.toFixed(2)}</h3></body></html>`);
+            printWindow.document.close(); printWindow.print();
+        }
+
+        function renderDashboard() {
+            let totalSales = 0;
+            const container = document.getElementById('billsContainer');
+            container.innerHTML = '';
+
+            if(billsList.length === 0) {
+                container.innerHTML = '<div class="card-blur p-6 rounded-2xl text-center text-xs text-gray-500">ബില്ലുകൾ ലഭ്യമല്ല</div>';
+            } else {
+                billsList.forEach(b => {
+                    totalSales += b.total;
+                    container.innerHTML += `
+                        <div class="card-blur p-3 rounded-xl flex justify-between items-center text-xs border border-gray-800/40">
+                            <div>
+                                <h4 class="font-bold text-gray-200">${b.mobile}</h4>
+                                <p class="text-[10px] text-gray-500 mt-0.5"><span class="text-blue-400 font-semibold">${b.date}</span>, ${b.time} • ${b.itemsCount} Items</p>
+                            </div>
+                            <p class="font-bold text-blue-400">₹${b.total.toFixed(2)}</p>
+                        </div>
+                    `;
+                });
+            }
+            document.getElementById('cardTotalSales').innerText = `₹${totalSales.toFixed(2)}`;
+            document.getElementById('cardTotalBills').innerText = billsList.length;
+            document.getElementById('cardTotalGst').innerText = `₹${(totalSales * 0.05).toFixed(2)}`;
+        }
+
+        function renderSalesChartCoreEngine() {
+            let chartLabels = []; let chartData = [];
+            let reversedList = [...billsList].reverse();
+            let uniqueSalesMap = {};
+            reversedList.forEach(b => { uniqueSalesMap[b.date] = (uniqueSalesMap[b.date] || 0) + b.total; });
+            chartLabels = Object.keys(uniqueSalesMap); chartData = Object.values(uniqueSalesMap);
+
+            if(salesChartInstance) salesChartInstance.destroy();
+            const ctx = document.getElementById('salesChart').getContext('2d');
+            salesChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: chartLabels.length > 0 ? chartLabels : ["No Data"],
+                    datasets: [{ label: 'Sales', data: chartData.length > 0 ? chartData : [0], borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.1)', borderWidth: 2, tension: 0.3, fill: true }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+        }
+
+        function saveShopConfiguration() {
+            const input = document.getElementById('cfgShopName').value.trim();
+            if(input) { 
+                configShopName = input; 
+                localStorage.setItem('configShopName', input); 
+                document.getElementById('navShopName').innerText = input; 
+                
+                storageKey = 'billsList_' + input.replace(/\s+/g, '_').toLowerCase();
+                billsList = JSON.parse(localStorage.getItem(storageKey)) || [];
+                
+                document.getElementById('settingsModal').classList.add('hidden'); 
+                renderDashboard();
+            }
+        }
+        function triggerBeepSound(freq, duration) { try { let ctx = new (window.AudioContext || window.webkitAudioContext)(); let osc = ctx.createOscillator(); osc.frequency.value = freq; osc.connect(ctx.destination); osc.start(); osc.stop(ctx.currentTime + duration); } catch(e){} }
+        function openSettingsModal() { document.getElementById('cfgShopName').value = configShopName; document.getElementById('settingsModal').classList.remove('hidden'); }
+        function closeBillingModal() { killCameraCore(); document.getElementById('billingModal').classList.add('hidden'); }
+        function clearAllData() { if(confirm("ഈ കടയിലെ വിവരങ്ങൾ മാത്രം റീസെറ്റ് ചെയ്യണോ?")) { localStorage.removeItem(storageKey); location.reload(); } }
+    </script>
+</body>
+</html>
